@@ -29,9 +29,16 @@
 
 ## Architecture Notes
 - Designs link to DesignSystem (not ComponentLibrary directly)
-- `is_root` / `allowed_children` in DesignSystemComponentConfig model
+- `is_root` / `allowed_children` auto-set at import time from Figma conventions; no manual UI
 - Background jobs don't run in test mode (`:test` queue adapter)
 - `sync_async` resets status to "pending" in production, skipped in E2E test mode
+
+## Figma Conventions (affect import + codegen)
+- `#root` in name/description → `is_root = true` at import
+- INSTANCE_SWAP + `preferredValues` → bound instance becomes `{props.children}`; `preferredValues` keys resolved to `allowed_children`
+- `#list` in name/description → N identical INSTANCE_SWAP instances collapsed to one `{props.children}`; schema uses direct `$ref`
+- `@slot` name prefix → removed (no backward compat)
+- ComponentDetail.vue shows is_root/allowed_children as read-only info (no edit controls)
 
 ## Common Patterns
 - Rails test controller guard: `unless Rails.env.test? && ENV["E2E_TEST_MODE"] == "true"`

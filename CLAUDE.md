@@ -305,8 +305,8 @@ make test-e2e    # E2E (starts servers, real Figma calls)
 
 ## Design Generation Flow
 
-1. **Import**: User provides Figma file URLs. The system imports all components from them (component sets with variants, standalone components, icons).
-2. **Configure**: User sets `is_root` and `allowed_children` on components to define valid nesting structure. Creates a design system grouping the libraries.
+1. **Import**: User provides Figma file URLs. The system imports all components from them (component sets with variants, standalone components, icons). `is_root` and `allowed_children` are set automatically from Figma conventions (`#root` marker, INSTANCE_SWAP `preferredValues`).
+2. **Configure**: User names the design system and groups the imported libraries into it. `is_root` / `allowed_children` are read-only — set by Figma conventions at import time.
 3. **Prompt**: User writes a text prompt describing the desired design.
 4. **Schema generation**: Backend builds a JSON Schema from the component library — component names, their props (extracted from variant names), `is_root` to identify top-level components, `allowed_children` to constrain valid nesting.
 5. **AI request**: The prompt + JSON Schema are sent to the AI model. The schema is passed as the structured output format so the AI generates valid JSON matching the component tree structure.
@@ -416,28 +416,39 @@ All 8 steps have existing code. The plan below verifies each step works, fixes i
 - Poll for updated iterations during improvement (same as initial generation)
 - Add E2E test for the improve flow
 
-## `@slot` Convention — Children Placement in Components
+## Children Slot — Figma-Driven Configuration
 
-Components in Figma often contain a placeholder instance where child content should be inserted at runtime. Without a convention, `ReactFactory` generates the placeholder as a regular component reference and appends `{props.children}` at the very end of the JSX — outside the component's layout. This means children render as siblings instead of nesting inside the parent's intended slot area.
+Components in Figma often contain a placeholder instance where child content should be inserted at runtime. `ReactFactory` detects the slot position from the Figma component definition and replaces it with `{props.children}` in the generated JSX — at the exact position inside the layout.
 
-### The Rule
+### Primary convention: INSTANCE_SWAP + `preferredValues`
 
-If a Figma component contains a child instance whose name starts with `@slot`, that instance marks the **default children insertion point**. During React code generation, `ReactFactory` must:
+Create an INSTANCE_SWAP property in Figma's component Properties panel and bind it to an instance node (the placeholder). Add `preferredValues` to the property listing the component sets that are valid children. At import time:
+- The bound instance node becomes `{props.children}` in the generated JSX.
+- `preferredValues` is resolved to component names → `allowed_children` is auto-set on the component set.
+- No manual configuration in the app UI is required.
 
-1. **Replace** the `@slot` instance with `{props.children}` in the generated JSX, at the exact position it appears in the component tree.
-2. **Omit** the automatic `{props.children}` that `build_component_code` normally appends at the end, since children are now placed inline.
+### `#root` — top-level component marker
+
+Add `#root` anywhere in a component set's **name or description** in Figma. At import time, `is_root` is set to `true` automatically. Root components are used as the top-level node in the AI schema. No manual `is_root` checkbox needed.
+
+### `#list` — list component
+
+Add `#list` anywhere in a component set's **name or description** in Figma. The component is expected to have N identical INSTANCE nodes all bound to the same INSTANCE_SWAP property. `ReactFactory` collapses all of them into a single `{props.children}`. The AI schema uses a direct `$ref` (not `anyOf`) to constrain children to the single item type.
+
+Example: a `ListContainer #list` with 3 identical item placeholder instances → generated JSX has one `{props.children}`; `allowed_children` is auto-set to the preferred item type.
 
 ### Example
 
-Figma structure of a `Page` component:
+Figma structure of a `Page` component with an INSTANCE_SWAP property named `Content` (preferredValues: Title, Button):
 ```
 Page (COMPONENT_SET)
+  Properties: Content (INSTANCE_SWAP, preferredValues: [Title, Button])
   └─ Default variant (COMPONENT)
        ├─ Background (RECTANGLE)
-       └─ @slot (INSTANCE of some placeholder component)
+       └─ content placeholder (INSTANCE, bound to Content property)
 ```
 
-Generated React code **before** (current behavior):
+Generated React code:
 ```jsx
 export function Page(props) {
   return (
@@ -445,46 +456,14 @@ export function Page(props) {
       <style>{styles}</style>
       <div className="root">
         <div className="background" />
-        <Slot />          {/* ← rendered as a component */}
-      </div>
-      {props.children}    {/* ← always at the end, outside layout */}
-    </>
-  );
-}
-```
-
-Generated React code **after** (with `@slot` convention):
-```jsx
-export function Page(props) {
-  return (
-    <>
-      <style>{styles}</style>
-      <div className="root">
-        <div className="background" />
-        {props.children}  {/* ← replaces @slot, inside the layout */}
+        {props.children}  {/* ← replaces the bound instance, inside the layout */}
       </div>
     </>
   );
 }
 ```
 
-### Impact on Rendering
-
-When the AI generates a tree like `Page > [Title, Text]` and `JsonToJsx` produces:
-```jsx
-<Page>
-  <Title>Danube</Title>
-  <Text>2,850 km</Text>
-</Page>
-```
-
-The children now render inside the Page's layout at the slot position, not as siblings.
-
-### Naming Convention
-
-- Instance name must start with `@slot` (case-sensitive)
-- A component can have at most one `@slot` — multiple slots are not supported
-- The `@slot` instance can reference any Figma component (its visual content is irrelevant — it's replaced entirely)
+Import result: `allowed_children = ["Title", "Button"]` auto-set on the Page component set.
 
 ## Known Issues
 
@@ -494,11 +473,12 @@ The children now render inside the Page's layout at the slot position, not as si
 
 ## Figma Component Authoring Conventions
 
-Special node-name conventions in Figma that affect code generation (see also the `@slot` Convention section above):
+Special conventions in Figma that affect import and code generation:
 
-- **`@slot`** — An INSTANCE node whose name starts with `@slot` (e.g. `@slot`, `@slot content`). Marks the position where `{props.children}` is rendered in the generated React component. When present, `children` is added to the JSON schema as a required string. When absent, `children` is omitted entirely from the schema.
-- **`@name`** — A TEXT node named with a `@` prefix (e.g. `@title`, `@description`). Becomes a required string prop in both the generated React code and the AI JSON schema. The AI fills it with content rather than passing JSX children. The `characters` value of the TEXT node becomes the default value. Example: a TEXT node named `@title` produces a `title` string prop — the JSX renders `{title}` instead of static text.
-- **Duplicate `@name` validation** — If two TEXT nodes within the same component share the same `@name` (e.g. two nodes named `@title`), the component is skipped on import with a log warning (`SKIP <name>: duplicate @name text nodes: @title`). For `reimport_component` / `reimport_component_set`, an error is raised.
+- **INSTANCE_SWAP + `preferredValues`** (primary slot convention) — Create an INSTANCE_SWAP property in the Properties panel and bind it to a placeholder instance. Set `preferredValues` to define valid child component sets. At import: the bound instance → `{props.children}` in JSX; `preferredValues` → `allowed_children` on the DB record. No manual UI configuration needed.
+- **`#root`** — Include `#root` anywhere in a component set's name or description. At import: `is_root = true`. Used by the AI schema as a top-level (root) component.
+- **`#list`** — Include `#list` anywhere in a component set's name or description. The component should have N identical INSTANCE nodes bound to the same INSTANCE_SWAP prop. `ReactFactory` collapses all into one `{props.children}`. The AI schema uses `$ref` directly (not `anyOf`) for tighter single-type constraint.
+- **Figma TEXT properties** — Text content that should be a dynamic prop must be defined as a TEXT property in Figma's component Properties panel, then bound to the text node via `componentPropertyReferences.characters`. The import reads these from `componentPropertyDefinitions` and stores them in `prop_definitions`. During code generation, any TEXT node with a `componentPropertyReferences.characters` reference is rendered as `{propName}` instead of static text. The AI schema requires these as string props.
 
 ## Maintenance Rules
 
