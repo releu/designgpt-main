@@ -24,7 +24,7 @@ test-app:
 test-e2e:
 	cd api && RAILS_ENV=test bundle exec rails db:test:prepare
 	cd api && RAILS_ENV=test E2E_TEST_MODE=true bundle exec rails e2e:setup
-	cd e2e && npx playwright test
+	cd e2e && npx bddgen && npx playwright test
 
 # Install E2E dependencies
 setup-e2e:
