@@ -1,0 +1,8 @@
+app/
+api/
+caddy/
+e2e/
+cubes/
+libs/
+.DS_Store
+.claude/
