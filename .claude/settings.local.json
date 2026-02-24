@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bin/rails db:migrate:*)",
+      "Bash(bundle install:*)",
+      "Bash(RAILS_ENV=test bin/rails db:migrate:*)",
+      "Bash(bundle exec rspec:*)",
+      "Bash(make test-app:*)",
+      "Bash(npm install)",
+      "Bash(npx vitest run)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(xargs:*)",
+      "Bash(make test:*)",
+      "Bash(bundle exec rails db:migrate:*)",
+      "Bash(npm test)",
+      "Bash(cd /Users/releu/Code/design-gpt/e2e && npx playwright test tests/design-system.spec.js --reporter=list 2>&1)",
+      "Bash(cd /Users/releu/Code/design-gpt/e2e && npm install && npx playwright test tests/design-system.spec.js --reporter=list 2>&1)",
+      "Bash(tail:*)",
+      "Bash(npx playwright:*)",
+      "Bash(node:*)",
+      "Bash(python3:*)",
+      "Bash(head:*)",
+      "Bash(curl:*)",
+      "Bash(ls:*)",
+      "Bash(echo done:*)",
+      "Bash(sleep 2:*)",
+      "Bash(sleep 3:*)",
+      "Bash(lsof -i :3000 -i :5173 -i :443 -t | xargs kill -9 2>/dev/null; sleep 4 && npx playwright test 2>&1)",
+      "Bash(lsof:*)",
+      "Bash(RAILS_ENV=development bundle exec:*)",
+      "Bash(git init:*)",
+      "Bash(ln:*)",
+      "Bash(chmod +x:*)"
+    ]
+  },
+  "spinnerTipsEnabled": false
+}
