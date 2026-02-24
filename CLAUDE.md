@@ -85,7 +85,6 @@ make test        # Runs test-api + test-app (fast, no servers needed)
 - **visual_diff_spec failures**: 2 expected failures in `spec/services/figma/visual_diff_spec.rb` (nil `diff_percent`) — separate task to address
 - **ChatMessage model**: No `belongs_to :design` declared — use `design_id` column directly in fixtures
 - **Art director disabled**: `ScreenshotJob` no longer triggers `analyze_last_render` — art director flow is commented out pending re-enablement
-- **DesignSystem model**: Designs link to a `DesignSystem` (not directly to libraries). `is_root` / `allowed_children` now live in `DesignSystemComponentConfig` — see `api/CLAUDE.md`
 
 ## Figma Component Authoring Conventions
 
@@ -100,6 +99,6 @@ Special node-name conventions in Figma that affect code generation:
 **These rules apply to every change made in this project:**
 
 1. **Keep tests up to date**: When adding or modifying functionality, write or update corresponding tests in the appropriate layer (Vitest for frontend, RSpec for API). Run `make test` before considering work done.
-2. **Keep CLAUDE.md files current**: When project structure, conventions, or architecture change, update the relevant CLAUDE.md file (this file, `app/CLAUDE.md`, or `api/CLAUDE.md`).
+2. **Keep CLAUDE.md files current**: When project structure, conventions, or architecture change, update the CLAUDE.md file (this file).
 3. **Follow existing patterns**: Match the code style and testing conventions already established in each subdirectory. See the per-project CLAUDE.md files for details.
 4. **E2E approach — real life, no shortcuts**: E2E tests must never mock API responses (`page.route()`). Only auth is mocked. Tests start with a clean DB (user only) and create all data through the UI. The full Figma sync pipeline runs — no bypasses. Write tests that expose bugs first (they should fail), fix the code, then confirm tests pass.

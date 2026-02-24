@@ -35,7 +35,9 @@
       "Bash(VITE_E2E_TEST=*)",
       "Bash(git add:*)",
       "Bash(find:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(echo === $dir ===:*)",
+      "Bash(git:*)"
     ]
   },
   "spinnerTipsEnabled": false
