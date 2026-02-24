@@ -34,7 +34,17 @@
       "Bash(RAILS_ENV=*)",
       "Bash(E2E_TEST_MODE=*)",
       "Bash(VITE_E2E_TEST=*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "WebFetch(domain:vitalets.github.io)",
+      "WebSearch",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:natasatech.wordpress.com)",
+      "WebFetch(domain:dev.to)",
+      "WebFetch(domain:www.varseno.com)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:deepwiki.com)",
+      "Bash(find:*)"
     ]
   },
   "spinnerTipsEnabled": false
