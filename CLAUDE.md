@@ -87,6 +87,14 @@ make test        # Runs test-api + test-app (fast, no servers needed)
 - **Art director disabled**: `ScreenshotJob` no longer triggers `analyze_last_render` — art director flow is commented out pending re-enablement
 - **DesignSystem model**: Designs link to a `DesignSystem` (not directly to libraries). `is_root` / `allowed_children` now live in `DesignSystemComponentConfig` — see `api/CLAUDE.md`
 
+## Figma Component Authoring Conventions
+
+Special node-name conventions in Figma that affect code generation:
+
+- **`@slot`** — An INSTANCE node whose name starts with `@slot` (e.g. `@slot`, `@slot content`). Marks the position where `{props.children}` is rendered in the generated React component. When present, `children` is added to the JSON schema as a required string. When absent, `children` is omitted entirely from the schema.
+- **`@name`** — A TEXT node named with a `@` prefix (e.g. `@title`, `@description`). Becomes a required string prop in both the generated React code and the AI JSON schema. The AI fills it with content rather than passing JSX children. The `characters` value of the TEXT node becomes the default value. Example: a TEXT node named `@title` produces a `title` string prop — the JSX renders `{title}` instead of static text.
+- **Duplicate `@name` validation** — If two TEXT nodes within the same component share the same `@name` (e.g. two nodes named `@title`), the component is skipped on import with a log warning (`SKIP <name>: duplicate @name text nodes: @title`). For `reimport_component` / `reimport_component_set`, an error is raised.
+
 ## Maintenance Rules
 
 **These rules apply to every change made in this project:**

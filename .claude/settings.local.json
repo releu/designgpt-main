@@ -33,7 +33,9 @@
       "Bash(RAILS_ENV=*)",
       "Bash(E2E_TEST_MODE=*)",
       "Bash(VITE_E2E_TEST=*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(find:*)",
+      "Bash(cd:*)"
     ]
   },
   "spinnerTipsEnabled": false
