@@ -416,6 +416,76 @@ All 8 steps have existing code. The plan below verifies each step works, fixes i
 - Poll for updated iterations during improvement (same as initial generation)
 - Add E2E test for the improve flow
 
+## `@slot` Convention — Children Placement in Components
+
+Components in Figma often contain a placeholder instance where child content should be inserted at runtime. Without a convention, `ReactFactory` generates the placeholder as a regular component reference and appends `{props.children}` at the very end of the JSX — outside the component's layout. This means children render as siblings instead of nesting inside the parent's intended slot area.
+
+### The Rule
+
+If a Figma component contains a child instance whose name starts with `@slot`, that instance marks the **default children insertion point**. During React code generation, `ReactFactory` must:
+
+1. **Replace** the `@slot` instance with `{props.children}` in the generated JSX, at the exact position it appears in the component tree.
+2. **Omit** the automatic `{props.children}` that `build_component_code` normally appends at the end, since children are now placed inline.
+
+### Example
+
+Figma structure of a `Page` component:
+```
+Page (COMPONENT_SET)
+  └─ Default variant (COMPONENT)
+       ├─ Background (RECTANGLE)
+       └─ @slot (INSTANCE of some placeholder component)
+```
+
+Generated React code **before** (current behavior):
+```jsx
+export function Page(props) {
+  return (
+    <>
+      <style>{styles}</style>
+      <div className="root">
+        <div className="background" />
+        <Slot />          {/* ← rendered as a component */}
+      </div>
+      {props.children}    {/* ← always at the end, outside layout */}
+    </>
+  );
+}
+```
+
+Generated React code **after** (with `@slot` convention):
+```jsx
+export function Page(props) {
+  return (
+    <>
+      <style>{styles}</style>
+      <div className="root">
+        <div className="background" />
+        {props.children}  {/* ← replaces @slot, inside the layout */}
+      </div>
+    </>
+  );
+}
+```
+
+### Impact on Rendering
+
+When the AI generates a tree like `Page > [Title, Text]` and `JsonToJsx` produces:
+```jsx
+<Page>
+  <Title>Danube</Title>
+  <Text>2,850 km</Text>
+</Page>
+```
+
+The children now render inside the Page's layout at the slot position, not as siblings.
+
+### Naming Convention
+
+- Instance name must start with `@slot` (case-sensitive)
+- A component can have at most one `@slot` — multiple slots are not supported
+- The `@slot` instance can reference any Figma component (its visual content is irrelevant — it's replaced entirely)
+
 ## Known Issues
 - **Art director disabled**: `ScreenshotJob` no longer triggers `analyze_last_render` — commented out pending re-enablement
 
