@@ -467,7 +467,6 @@ Import result: `allowed_children = ["Title", "Button"]` auto-set on the Page com
 
 ## Known Issues
 
-- **visual_diff_spec failures**: 2 expected failures in `spec/services/figma/visual_diff_spec.rb` (nil `diff_percent`) — separate task to address
 - **ChatMessage model**: No `belongs_to :design` declared — use `design_id` column directly in fixtures
 - **Art director disabled**: `ScreenshotJob` no longer triggers `analyze_last_render` — art director flow is commented out pending re-enablement
 

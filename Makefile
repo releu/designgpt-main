@@ -1,12 +1,18 @@
-.PHONY: dev test test-api test-app test-e2e setup setup-e2e
+.PHONY: dev clean_dev test test-api test-app test-e2e setup setup-e2e
 
 # Start all development servers (Rails API + Vite frontend + Caddy proxy)
 dev:
-	@trap 'kill 0' EXIT; \
+	@trap 'kill -- -$$; sleep 1; kill -9 -- -$$ 2>/dev/null; psql postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname LIKE '"'"'jan_designer_api_%'"'"' AND pid <> pg_backend_pid()" > /dev/null 2>&1; exit' INT TERM; \
 	cd api && bin/rails server -p 3000 -b 127.0.0.1 & \
 	cd app && npm run dev & \
 	cd caddy && caddy run --config Caddyfile & \
 	wait
+
+# Rebuild database from scratch and start dev servers
+clean_dev:
+	-psql postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname LIKE 'jan_designer_api_%' AND pid <> pg_backend_pid()" > /dev/null
+	cd api && bin/rails db:drop db:create db:migrate
+	$(MAKE) dev
 
 # Run all test layers
 test: test-api test-app
